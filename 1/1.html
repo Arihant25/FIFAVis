@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Cup Champion Performance</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #1a365d;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        h2:after {
+            content: '⚽';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+        }
+
+        .bar {
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 1px;
+            transition: opacity 0.3s ease;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .axis-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tick text {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            font-size: 12px;
+        }
+
+        .mobile-warning {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 90%;
+        }
+
+        @media screen and (max-width: 1172px) {
+            .container {
+                display: none;
+            }
+
+            .mobile-warning {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Men's World Cup Champions: Performance in the Next Tournament</h2>
+        <svg id="mens-chart" width="1100" height="600"></svg>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ecc71;"></div>
+                <span>Successfully Defended Title</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e74c3c;"></div>
+                <span>Failed to Defend Title</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Women's World Cup Champions: Performance in the Next Tournament</h2>
+        <svg id="womens-chart" width="1100" height="600"></svg>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #9b59b6;"></div>
+                <span>Successfully Defended Title</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e67e22;"></div>
+                <span>Failed to Defend Title</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-warning">
+        <h3>⚠️ Desktop View Recommended</h3>
+        <p>This visualization is not optimized for small screens. Please view on a desktop or tablet device for the best
+            experience.</p>
+    </div>
+
+
+    <script>
+        function createChart(data, svgId, successColor, failColor) {
+            // Set up SVG dimensions
+            const width = 1100, height = 500;
+            const margin = { top: 20, right: 0, bottom: 150, left: 80 };
+            const svg = d3.select(svgId)
+                .attr("width", width)
+                .attr("height", height);
+
+            // Create tooltip
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // Scales
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => `${d.team} (${d.year1.slice(-4)}-${d.year2.slice(-2)})`))
+                .range([margin.left, width - margin.right])
+                .padding(0.3);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => Math.max(d.goals1, d.goals2))])
+                .nice()
+                .range([height - margin.bottom, margin.top]);
+
+            // Draw axes with styled grid lines
+            svg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+                .style("font-size", "12px")
+                .style("font-weight", "600");
+
+            svg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yScale)
+                    .ticks(10)
+                    .tickSize(-width + margin.left + margin.right))
+                .call(g => g.select(".domain").remove())
+                .call(g => g.selectAll(".tick line")
+                    .attr("stroke", "#e0e0e0")
+                    .attr("stroke-dasharray", "2,2"));
+
+            // Draw bars
+            svg.selectAll(".bar-group")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("transform", d => `translate(${xScale(`${d.team} (${d.year1.slice(-4)}-${d.year2.slice(-2)})`)},0)`)
+                .each(function (d) {
+                    // Winner's performance in their winning year
+                    d3.select(this)
+                        .append("rect")
+                        .attr("class", "bar")
+                        .attr("x", 5)
+                        .attr("y", yScale(d.goals1))
+                        .attr("width", xScale.bandwidth() / 2 - 5)
+                        .attr("height", height - margin.bottom - yScale(d.goals1))
+                        .attr("fill", d.defended ? successColor : failColor)
+                        .attr("rx", 4)
+                        .on("mouseover", function (event) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(`${d.team}<br/>Goals in ${d.year1}: ${d.goals1}`)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function () {
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", 0);
+                        });
+
+                    // Performance in following tournament
+                    d3.select(this)
+                        .append("rect")
+                        .attr("class", "bar")
+                        .attr("x", xScale.bandwidth() / 2 + 5)
+                        .attr("y", yScale(d.goals2))
+                        .attr("width", xScale.bandwidth() / 2 - 5)
+                        .attr("height", height - margin.bottom - yScale(d.goals2))
+                        .attr("fill", d.defended ? successColor : failColor)
+                        .attr("rx", 4)
+                        .on("mouseover", function (event) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(`${d.team}<br/>Goals in ${d.year2}: ${d.goals2}`)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function () {
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", 0);
+                        });
+                });
+
+            // Add axis labels
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height - 10)
+                .attr("text-anchor", "middle")
+                .attr("class", "axis-label")
+                .style("font-size", "14px")
+                .style("font-weight", "600")
+                .text("World Cup Champions");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", 25)
+                .attr("text-anchor", "middle")
+                .attr("class", "axis-label")
+                .style("font-size", "14px")
+                .style("font-weight", "600")
+                .text("Total Goals Scored");
+        }
+
+        // Load both datasets
+        Promise.all([
+            d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/tournament_standings.csv"),
+            d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/goals.csv")
+        ]).then(([tournamentData, goalsData]) => {
+            // Process goals data for men's and women's tournaments
+            const mensGoalCounts = {};
+            const womensGoalCounts = {};
+
+            goalsData.forEach(d => {
+                const isWomens = d.tournament_name && d.tournament_name.toLowerCase().includes('women');
+                const counts = isWomens ? womensGoalCounts : mensGoalCounts;
+                const key = d.team_name + '-' + d.tournament_id;
+                counts[key] = (counts[key] || 0) + 1;
+            });
+
+            // Process tournament data to get winners
+            const mensWinners = {};
+            const womensWinners = {};
+
+            tournamentData.forEach(d => {
+                const isWomens = d.tournament_name && d.tournament_name.toLowerCase().includes('women');
+                const winners = isWomens ? womensWinners : mensWinners;
+                if (d.position === "1") {
+                    winners[d.tournament_id] = d.team_name;
+                }
+            });
+
+            // Create chart data for both tournaments
+            function createChartData(winners, goalCounts) {
+                const tournamentYears = Object.keys(winners).sort();
+                const chartData = [];
+
+                for (let i = 0; i < tournamentYears.length - 1; i++) {
+                    const year1 = tournamentYears[i];
+                    const year2 = tournamentYears[i + 1];
+                    const team = winners[year1];
+
+                    const goals1 = goalCounts[`${team}-${year1}`] || 0;
+                    const goals2 = goalCounts[`${team}-${year2}`] || 0;
+
+                    chartData.push({
+                        year1,
+                        year2,
+                        team,
+                        goals1,
+                        goals2,
+                        defended: winners[year2] === team
+                    });
+                }
+                return chartData;
+            }
+
+            // Create both charts
+            const mensChartData = createChartData(mensWinners, mensGoalCounts);
+            const womensChartData = createChartData(womensWinners, womensGoalCounts);
+
+            createChart(mensChartData, "#mens-chart", "#2ecc71", "#e74c3c");
+            createChart(womensChartData, "#womens-chart", "#9b59b6", "#e67e22");
+        }).catch(error => console.error(error));
+    </script>
+</body>
+
+</html>

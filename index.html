@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA World Cup Data Visualisation</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto+Slab:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #0d47a1;
+            --accent: #64b5f6;
+            --dark: #1a237e;
+            --light: #e3f2fd;
+        }
+
+        body {
+            font-family: 'Roboto Slab', serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .header {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            padding: 2rem;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -10%;
+            width: 120%;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(-3deg);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team {
+            display: flex;
+            justify-content: space-around;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .member-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            flex: 1;
+            min-width: 250px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .member-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .link-container {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .link-button {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .link-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .link-button i {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            width: 40px;
+            text-align: center;
+        }
+
+        .fifa-animation {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .floating-ball {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+            background-image: linear-gradient(45deg, #000 25%, transparent 25%),
+                linear-gradient(-45deg, #000 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #000 75%),
+                linear-gradient(-45deg, transparent 75%, #000 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            text-align: center;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview {
+            padding: 2rem;
+            background: var(--light);
+            border-radius: 15px;
+            margin: 2rem 0;
+            line-height: 1.6;
+        }
+
+        .overview h2 {
+            color: var(--secondary);
+            margin-top: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .member-card {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>⚽ FIFA World Cup Analysis</h1>
+        <div class="fifa-animation">
+            <div class="floating-ball"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="overview">
+            <h2>Overview</h2>
+            <p>The FIFA World Cup stands as the most prestigious and widely viewed sporting event on earth, capturing
+                the attention of billions every four years. Our comprehensive analysis explores the deep history of FIFA
+                World Cup data spanning multiple tournaments and decades of international football.</p>
+        </div>
+
+        <div class="team">
+            <div class="member-card">
+                <h3>Arihant Tripathy</h3>
+                <p>2023111026</p>
+                <strong>Champions Performance Analysis</strong>
+                <p>How do World Cup champions perform in subsequent tournaments?</p>
+            </div>
+            <div class="member-card">
+                <h3>Akshat Srivastava</h3>
+                <p>2023111020</p>
+                <strong>Host Nations Analysis</strong>
+                <p>Which countries have hosted the FIFA World Cup?</p>
+            </div>
+            <div class="member-card">
+                <h3>Aryan Maskara</h3>
+                <p>2023111004</p>
+                <strong>Bookings Impact Analysis</strong>
+                <p>How do yellow and red cards influence match outcomes?</p>
+            </div>
+        </div>
+
+        <div class="link-container">
+            <a href="1/1.html" class="link-button">
+                <i class="fas fa-trophy"></i>
+                <div>
+                    <h3>Champions Performance by Arihant</h3>
+                    <p>Exploring how World Cup champions perform in subsequent tournaments</p>
+                </div>
+            </a>
+            <a href="2/2.html" class="link-button">
+                <i class="fas fa-globe"></i>
+                <div>
+                    <h3>Host Nations by Akshat</h3>
+                    <p>Global distribution of FIFA World Cup host nations</p>
+                </div>
+            </a>
+            <a href="3/3.html" class="link-button">
+                <i class="fas fa-cards"></i>
+                <div>
+                    <h3>Bookings Analysis by Aryan</h3>
+                    <p>Impact of yellow and red cards on match outcomes</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>
