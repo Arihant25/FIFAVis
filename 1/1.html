@@ -1,4 +1,3 @@
-<!-- Change these SVG elements (there are two of them) -->
 <html lang="en">
 
 <head>
@@ -335,26 +334,31 @@
     </div>
 
     <script>
+        // Function to create a bar chart visualization
+        // Parameters: data array, SVG element ID, colors for success/fail, and grouping preference
         function createChart(data, svgId, successColor, failColor, groupBy = 'year') {
-            // Clear existing chart
+            // Clear any existing elements in the SVG
             d3.select(svgId).selectAll("*").remove();
 
-            // Set up dimensions
+            // Define chart dimensions and margins
             const width = 1100, height = 500;
             const margin = { top: 20, right: 0, bottom: 130, left: 80 };
             const svg = d3.select(svgId)
                 .attr("width", width)
                 .attr("height", height);
 
-            // Create tooltip
+            // Create tooltip div for hover interactions
             const tooltip = d3.select("body").append("div")
                 .attr("class", "tooltip")
                 .style("opacity", 0);
 
+            // Process data based on grouping preference
             let processedData = [];
             if (groupBy === 'year') {
+                // Process data year by year
                 processedData = data.flatMap(country => {
                     return country.years.map((year, i) => {
+                        // Handle special case for WWII period
                         let nextTournamentYear;
                         if (year === "1938") {
                             nextTournamentYear = "1950";
@@ -362,6 +366,7 @@
                             nextTournamentYear = (parseInt(year) + 4).toString();
                         }
 
+                        // Check if country defended their title
                         const wonNextTournament = country.years.includes(nextTournamentYear) &&
                             country.years[country.years.indexOf(year) + 1] === nextTournamentYear;
 
@@ -374,12 +379,14 @@
                     });
                 }).sort((a, b) => a.year.localeCompare(b.year));
             } else {
+                // Process data by country
                 processedData = data.map(country => ({
                     ...country,
                     defended: country.years.some((year, i) => {
                         if (i < country.years.length - 1) {
                             const currentYear = parseInt(year);
                             const nextYear = parseInt(country.years[i + 1]);
+                            // Special case for WWII period
                             if (currentYear === 1938 && nextYear === 1950) {
                                 return true;
                             }
@@ -390,7 +397,7 @@
                 }));
             }
 
-            // Create scales
+            // Create scales for x and y axes
             const xScale = d3.scaleBand()
                 .domain(groupBy === 'year'
                     ? processedData.map(d => `${d.team} (${d.year})`)
@@ -399,11 +406,11 @@
                 .padding(0.3);
 
             const yScale = d3.scaleLinear()
-                .domain([0, groupBy === 'year' ? d3.max(processedData, d => d.goals) : 10])
+                .domain([0, d3.max(processedData.flatMap(d => d.goals))])
                 .nice()
                 .range([height - margin.bottom, margin.top]);
 
-            // Draw axes
+            // Draw x and y axes
             svg.append("g")
                 .attr("transform", `translate(0,${height - margin.bottom})`)
                 .call(d3.axisBottom(xScale))
@@ -413,6 +420,7 @@
                 .style("font-size", "12px")
                 .style("font-weight", "600");
 
+            // Draw y-axis with grid lines
             svg.append("g")
                 .attr("transform", `translate(${margin.left},0)`)
                 .call(d3.axisLeft(yScale)
@@ -423,8 +431,9 @@
                     .attr("stroke", "#e0e0e0")
                     .attr("stroke-dasharray", "2,2"));
 
-            // Draw bars with animations
+            // Draw bars based on grouping preference
             if (groupBy === 'year') {
+                // Draw bars for year-based grouping
                 svg.selectAll(".bar")
                     .data(processedData)
                     .enter()
@@ -441,7 +450,7 @@
                     .attr("y", d => yScale(d.goals))
                     .attr("height", d => height - margin.bottom - yScale(d.goals));
 
-                // Add event listeners after transition
+                // Add tooltips to bars
                 svg.selectAll(".bar")
                     .on("mouseover", function (event, d) {
                         tooltip.transition()
@@ -458,6 +467,7 @@
                             .style("opacity", 0);
                     });
             } else {
+                // Draw bars for country-based grouping
                 processedData.forEach(country => {
                     const barWidth = xScale.bandwidth() / country.goals.length;
 
@@ -466,11 +476,11 @@
                         const wonNextTournament = i < country.years.length - 1 &&
                             country.years[i + 1] === nextTournamentYear;
 
-                        // Create bar group
+                        // Create bar group for each country
                         const barGroup = svg.append("g")
                             .attr("class", "bar-group");
 
-                        // Add bar
+                        // Add animated bars
                         barGroup.append("rect")
                             .attr("class", "bar")
                             .attr("x", xScale(country.team) + (i * barWidth))
@@ -481,14 +491,14 @@
                             .attr("rx", 4)
                             .transition()
                             .duration(1000)
-                            .attr("y", yScale(8))  // Fixed height for country view
-                            .attr("height", height - margin.bottom - yScale(8));
+                            .attr("y", yScale(country.goals[i]))
+                            .attr("height", height - margin.bottom - yScale(country.goals[i]));
 
-                        // Add year label
+                        // Add year labels to bars
                         barGroup.append("text")
                             .attr("class", "year-label")
                             .attr("x", xScale(country.team) + (i * barWidth) + (barWidth - 2) / 2)
-                            .attr("y", yScale(4))  // Center of bar
+                            .attr("y", yScale(4))
                             .attr("transform", d => `rotate(-90,${xScale(country.team) + (i * barWidth) + (barWidth - 2) / 2},${yScale(4)})`)
                             .text(year)
                             .style("opacity", 0)
@@ -496,14 +506,14 @@
                             .duration(1000)
                             .style("opacity", 1);
 
-                        // Add event listeners
+                        // Add tooltips to bars
                         barGroup.select(".bar")
                             .on("mouseover", function (event) {
                                 tooltip.transition()
                                     .duration(200)
                                     .style("opacity", .9);
                                 const defenseStatus = wonNextTournament ? "Successfully defended in next World Cup" : "Did not defend in next World Cup";
-                                tooltip.html(`${country.team}<br/>Year: ${year}<br/>${defenseStatus}`)
+                                tooltip.html(`${country.team}<br/>Goals in ${year}: ${country.goals[i]}<br/>${defenseStatus}`)
                                     .style("left", (event.pageX + 10) + "px")
                                     .style("top", (event.pageY - 28) + "px");
                             })
@@ -533,11 +543,12 @@
                 .text(groupBy === 'year' ? "Total Goals Scored" : "Championships Won");
         }
 
-        // Load both datasets
+        // Load data from external sources
         Promise.all([
             d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/tournament_standings.csv"),
             d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/goals.csv")
         ]).then(([tournamentData, goalsData]) => {
+            // Process goals data for men's and women's tournaments
             const mensGoalCounts = {};
             const womensGoalCounts = {};
 
@@ -548,6 +559,7 @@
                 counts[key] = (counts[key] || 0) + 1;
             });
 
+            // Process tournament winners data
             const mensWinners = {};
             const womensWinners = {};
 
@@ -559,6 +571,7 @@
                 }
             });
 
+            // Helper function to format data for charts
             function createChartData(winners, goalCounts) {
                 const tournamentYears = Object.keys(winners).sort();
                 const countryData = {};
@@ -582,18 +595,20 @@
                 }));
             }
 
+            // Create chart data for both tournaments
             const mensChartData = createChartData(mensWinners, mensGoalCounts);
             const womensChartData = createChartData(womensWinners, womensGoalCounts);
 
-            // Initial chart creation
+            // Create initial women's chart
             createChart(womensChartData, "#womens-chart", "#9b59b6", "#e67e22", 'year');
 
-            // Tournament toggle
+            // Handle tournament toggle between men's and women's data
             document.getElementById('tournament-toggle').addEventListener('change', function (e) {
                 const mensContainer = document.getElementById('mens-container');
                 const womensContainer = document.getElementById('womens-container');
 
                 if (e.target.checked) {
+                    // Switch to men's chart
                     womensContainer.style.opacity = 0;
                     setTimeout(() => {
                         womensContainer.classList.add('hidden');
@@ -605,6 +620,7 @@
                         }, 50);
                     }, 500);
                 } else {
+                    // Switch to women's chart
                     mensContainer.style.opacity = 0;
                     setTimeout(() => {
                         mensContainer.classList.add('hidden');
@@ -618,7 +634,7 @@
                 }
             });
 
-            // Add grouping toggle event listeners
+            // Add event listeners for grouping toggles
             document.getElementById('grouping-toggle-mens').addEventListener('change', function (e) {
                 createChart(mensChartData, "#mens-chart", "#2ecc71", "#e74c3c", e.target.checked ? 'country' : 'year');
             });
