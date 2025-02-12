@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- Change these SVG elements (there are two of them) -->
 <html lang="en">
 
 <head>
@@ -8,116 +8,172 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #1a365d;
+            --success-women: #9b59b6;
+            --fail-women: #e67e22;
+            --success-men: #2ecc71;
+            --fail-men: #e74c3c;
+            --background: #f0f2f5;
+            --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            color: #2c3e50;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f6f8fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: var(--primary-color);
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto 30px auto;
             background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--success-women), var(--fail-women));
         }
 
         h2 {
             text-align: center;
-            color: #1a365d;
-            font-size: 2rem;
-            margin-bottom: 2rem;
+            color: var(--secondary-color);
+            font-size: 1.8rem;
+            margin-bottom: 2.5rem;
             position: relative;
             padding-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         h2:after {
-            content: '⚽';
+            content: '';
             position: absolute;
-            bottom: -10px;
+            bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1.5rem;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--success-women), var(--fail-women));
+            border-radius: 2px;
         }
 
         .bar {
             stroke: rgba(255, 255, 255, 0.3);
             stroke-width: 1px;
-            transition: opacity 0.3s ease;
+            transition: var(--transition);
+            cursor: pointer;
         }
 
         .bar:hover {
             opacity: 0.8;
+            transform: translateY(-2px);
+        }
+
+        .year-label {
+            fill: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-anchor: middle;
+            pointer-events: none;
         }
 
         .axis-label {
             font-size: 14px;
             font-weight: 600;
+            fill: var(--secondary-color);
         }
 
         .tick text {
             font-size: 12px;
             font-weight: 500;
+            fill: #666;
         }
 
         .legend {
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
-            font-size: 0.9rem;
+            gap: 3rem;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.8rem;
+            font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .tooltip {
             position: absolute;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.85);
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
             pointer-events: none;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
         }
 
-        /* Toggle Switch Styles */
         .toggle-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
+            margin-bottom: 30px;
+            gap: 12px;
         }
 
         .toggle-label {
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #1a365d;
+            color: var(--secondary-color);
         }
 
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 200px;
-            height: 34px;
-            background-color: #e2e8f0;
-            border-radius: 17px;
+            width: 220px;
+            height: 40px;
+            background-color: #f0f2f5;
+            border-radius: 20px;
             cursor: pointer;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .toggle-switch input {
@@ -133,50 +189,67 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 10px;
-            border-radius: 17px;
-            background-color: #e2e8f0;
-            transition: 0.4s;
+            padding: 0 15px;
+            border-radius: 20px;
+            background-color: #f0f2f5;
+            transition: var(--transition);
         }
 
         .toggle-slider:before {
             content: "";
             position: absolute;
-            height: 26px;
-            width: 95px;
+            height: 32px;
+            width: 105px;
             left: 4px;
             bottom: 4px;
             background-color: white;
-            transition: 0.4s;
-            border-radius: 13px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .toggle-option {
-            color: #1a365d;
-            font-size: 0.9rem;
+            color: var(--secondary-color);
+            font-size: 0.95rem;
             font-weight: 600;
             z-index: 1;
-            transition: color 0.4s;
+            transition: var(--transition);
         }
 
         input:checked+.toggle-slider:before {
-            transform: translateX(97px);
+            transform: translateX(107px);
         }
 
-        input:checked+.toggle-slider .toggle-option.year {
-            color: #1a365d;
+        .chart-container {
+            opacity: 1;
+            transition: var(--transition);
+        }
+
+        .hidden {
+            display: none;
+            opacity: 0;
         }
 
         .mobile-warning {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 25px;
             background-color: #fff3cd;
             border: 1px solid #ffeeba;
-            border-radius: 8px;
+            border-radius: 12px;
             margin: 20px auto;
             max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .mobile-warning h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .mobile-warning p {
+            color: #666;
+            font-size: 0.95rem;
         }
 
         @media screen and (max-width: 1172px) {
@@ -193,51 +266,64 @@
 
 <body>
     <div class="container">
-        <h2>Men's World Cup Champions: Performance in the Next Tournament</h2>
         <div class="toggle-container">
-            <span class="toggle-label">Group by</span>
+            <span class="toggle-label">Select Tournament</span>
             <label class="toggle-switch">
-                <input type="checkbox" id="grouping-toggle-mens">
+                <input type="checkbox" id="tournament-toggle">
                 <div class="toggle-slider">
-                    <span class="toggle-option year">Year</span>
-                    <span class="toggle-option country">Country</span>
+                    <span class="toggle-option">Women's</span>
+                    <span class="toggle-option">Men's</span>
                 </div>
             </label>
         </div>
-        <svg id="mens-chart" width="1100" height="600"></svg>
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #2ecc71;"></div>
-                <span>Successfully Defended Title</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #e74c3c;"></div>
-                <span>Failed to Defend Title</span>
-            </div>
-        </div>
-    </div>
 
-    <div class="container">
-        <h2>Women's World Cup Champions: Performance in the Next Tournament</h2>
-        <div class="toggle-container">
-            <span class="toggle-label">Group by</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="grouping-toggle-womens">
-                <div class="toggle-slider">
-                    <span class="toggle-option year">Year</span>
-                    <span class="toggle-option country">Country</span>
-                </div>
-            </label>
-        </div>
-        <svg id="womens-chart" width="1100" height="600"></svg>
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #9b59b6;"></div>
-                <span>Successfully Defended Title</span>
+        <div id="womens-container" class="chart-container">
+            <h2>Women's World Cup Champions: Performance in the Next Tournament</h2>
+            <div class="toggle-container">
+                <span class="toggle-label">Group by</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="grouping-toggle-womens">
+                    <div class="toggle-slider">
+                        <span class="toggle-option year">Year</span>
+                        <span class="toggle-option country">Country</span>
+                    </div>
+                </label>
             </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #e67e22;"></div>
-                <span>Failed to Defend Title</span>
+            <svg id="womens-chart" width="1100" height="500"></svg>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span>Successfully Defended Title</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e67e22;"></div>
+                    <span>Failed to Defend Title</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="mens-container" class="chart-container hidden">
+            <h2>Men's World Cup Champions: Performance in the Next Tournament</h2>
+            <div class="toggle-container">
+                <span class="toggle-label">Group by</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="grouping-toggle-mens">
+                    <div class="toggle-slider">
+                        <span class="toggle-option year">Year</span>
+                        <span class="toggle-option country">Country</span>
+                    </div>
+                </label>
+            </div>
+            <svg id="mens-chart" width="1100" height="500"></svg>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Successfully Defended Title</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Failed to Defend Title</span>
+                </div>
             </div>
         </div>
     </div>
@@ -255,7 +341,7 @@
 
             // Set up dimensions
             const width = 1100, height = 500;
-            const margin = { top: 20, right: 0, bottom: 150, left: 80 };
+            const margin = { top: 20, right: 0, bottom: 130, left: 80 };
             const svg = d3.select(svgId)
                 .attr("width", width)
                 .attr("height", height);
@@ -265,21 +351,17 @@
                 .attr("class", "tooltip")
                 .style("opacity", 0);
 
-            // Modified data processing to track consecutive wins
-            // Modified data processing to track consecutive wins
             let processedData = [];
             if (groupBy === 'year') {
                 processedData = data.flatMap(country => {
                     return country.years.map((year, i) => {
-                        // Find if this country won the next tournament
                         let nextTournamentYear;
                         if (year === "1938") {
-                            nextTournamentYear = "1950"; // Special case for WWII gap
+                            nextTournamentYear = "1950";
                         } else {
                             nextTournamentYear = (parseInt(year) + 4).toString();
                         }
 
-                        // Check if the same team won the next tournament
                         const wonNextTournament = country.years.includes(nextTournamentYear) &&
                             country.years[country.years.indexOf(year) + 1] === nextTournamentYear;
 
@@ -291,16 +373,13 @@
                         };
                     });
                 }).sort((a, b) => a.year.localeCompare(b.year));
-            }
-            else {
-                // For country view
+            } else {
                 processedData = data.map(country => ({
                     ...country,
                     defended: country.years.some((year, i) => {
                         if (i < country.years.length - 1) {
                             const currentYear = parseInt(year);
                             const nextYear = parseInt(country.years[i + 1]);
-                            // Handle the special case for 1938-1950
                             if (currentYear === 1938 && nextYear === 1950) {
                                 return true;
                             }
@@ -319,12 +398,8 @@
                 .range([margin.left, width - margin.right])
                 .padding(0.3);
 
-            const maxGoals = groupBy === 'year'
-                ? d3.max(processedData, d => d.goals)
-                : d3.max(processedData, d => d3.max(d.goals));
-
             const yScale = d3.scaleLinear()
-                .domain([0, maxGoals])
+                .domain([0, groupBy === 'year' ? d3.max(processedData, d => d.goals) : 10])
                 .nice()
                 .range([height - margin.bottom, margin.top]);
 
@@ -348,20 +423,26 @@
                     .attr("stroke", "#e0e0e0")
                     .attr("stroke-dasharray", "2,2"));
 
-            // Draw bars with modified coloring logic
+            // Draw bars with animations
             if (groupBy === 'year') {
-                // Single bars for year view
                 svg.selectAll(".bar")
                     .data(processedData)
                     .enter()
                     .append("rect")
                     .attr("class", "bar")
                     .attr("x", d => xScale(`${d.team} (${d.year})`))
-                    .attr("y", d => yScale(d.goals))
+                    .attr("y", height - margin.bottom)
                     .attr("width", xScale.bandwidth())
-                    .attr("height", d => height - margin.bottom - yScale(d.goals))
+                    .attr("height", 0)
                     .attr("fill", d => d.defended ? successColor : failColor)
                     .attr("rx", 4)
+                    .transition()
+                    .duration(1000)
+                    .attr("y", d => yScale(d.goals))
+                    .attr("height", d => height - margin.bottom - yScale(d.goals));
+
+                // Add event listeners after transition
+                svg.selectAll(".bar")
                     .on("mouseover", function (event, d) {
                         tooltip.transition()
                             .duration(200)
@@ -377,7 +458,6 @@
                             .style("opacity", 0);
                     });
             } else {
-                // Multiple bars per country for country view
                 processedData.forEach(country => {
                     const barWidth = xScale.bandwidth() / country.goals.length;
 
@@ -386,20 +466,44 @@
                         const wonNextTournament = i < country.years.length - 1 &&
                             country.years[i + 1] === nextTournamentYear;
 
-                        svg.append("rect")
+                        // Create bar group
+                        const barGroup = svg.append("g")
+                            .attr("class", "bar-group");
+
+                        // Add bar
+                        barGroup.append("rect")
                             .attr("class", "bar")
                             .attr("x", xScale(country.team) + (i * barWidth))
-                            .attr("y", yScale(country.goals[i]))
+                            .attr("y", height - margin.bottom)
                             .attr("width", barWidth - 2)
-                            .attr("height", height - margin.bottom - yScale(country.goals[i]))
+                            .attr("height", 0)
                             .attr("fill", wonNextTournament ? successColor : failColor)
                             .attr("rx", 4)
+                            .transition()
+                            .duration(1000)
+                            .attr("y", yScale(8))  // Fixed height for country view
+                            .attr("height", height - margin.bottom - yScale(8));
+
+                        // Add year label
+                        barGroup.append("text")
+                            .attr("class", "year-label")
+                            .attr("x", xScale(country.team) + (i * barWidth) + (barWidth - 2) / 2)
+                            .attr("y", yScale(4))  // Center of bar
+                            .attr("transform", d => `rotate(-90,${xScale(country.team) + (i * barWidth) + (barWidth - 2) / 2},${yScale(4)})`)
+                            .text(year)
+                            .style("opacity", 0)
+                            .transition()
+                            .duration(1000)
+                            .style("opacity", 1);
+
+                        // Add event listeners
+                        barGroup.select(".bar")
                             .on("mouseover", function (event) {
                                 tooltip.transition()
                                     .duration(200)
                                     .style("opacity", .9);
                                 const defenseStatus = wonNextTournament ? "Successfully defended in next World Cup" : "Did not defend in next World Cup";
-                                tooltip.html(`${country.team}<br/>Goals in ${year}: ${country.goals[i]}<br/>${defenseStatus}`)
+                                tooltip.html(`${country.team}<br/>Year: ${year}<br/>${defenseStatus}`)
                                     .style("left", (event.pageX + 10) + "px")
                                     .style("top", (event.pageY - 28) + "px");
                             })
@@ -426,7 +530,7 @@
                 .attr("y", 25)
                 .attr("text-anchor", "middle")
                 .attr("class", "axis-label")
-                .text("Total Goals Scored");
+                .text(groupBy === 'year' ? "Total Goals Scored" : "Championships Won");
         }
 
         // Load both datasets
@@ -434,7 +538,6 @@
             d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/tournament_standings.csv"),
             d3.csv("https://raw.githubusercontent.com/jfjelstul/worldcup/master/data-csv/goals.csv")
         ]).then(([tournamentData, goalsData]) => {
-            // Process goals data for men's and women's tournaments
             const mensGoalCounts = {};
             const womensGoalCounts = {};
 
@@ -445,7 +548,6 @@
                 counts[key] = (counts[key] || 0) + 1;
             });
 
-            // Process tournament data to get winners
             const mensWinners = {};
             const womensWinners = {};
 
@@ -457,7 +559,6 @@
                 }
             });
 
-            // Create chart data for both tournaments
             function createChartData(winners, goalCounts) {
                 const tournamentYears = Object.keys(winners).sort();
                 const countryData = {};
@@ -477,28 +578,47 @@
                 return Object.entries(countryData).map(([team, data]) => ({
                     team,
                     years: data.years,
-                    goals: data.goals,
-                    defended: data.years.some((year, i) => {
-                        if (i < data.years.length - 1) {
-                            const currentYear = parseInt(year);
-                            const nextYear = parseInt(data.years[i + 1]);
-                            if (currentYear === 1938 && nextYear === 1950) return true;
-                            return nextYear - currentYear === 4;
-                        }
-                        return false;
-                    })
+                    goals: data.goals
                 }));
             }
 
-            // Create both charts
             const mensChartData = createChartData(mensWinners, mensGoalCounts);
             const womensChartData = createChartData(womensWinners, womensGoalCounts);
 
             // Initial chart creation
-            createChart(mensChartData, "#mens-chart", "#2ecc71", "#e74c3c", 'year');
             createChart(womensChartData, "#womens-chart", "#9b59b6", "#e67e22", 'year');
 
-            // Add toggle event listeners
+            // Tournament toggle
+            document.getElementById('tournament-toggle').addEventListener('change', function (e) {
+                const mensContainer = document.getElementById('mens-container');
+                const womensContainer = document.getElementById('womens-container');
+
+                if (e.target.checked) {
+                    womensContainer.style.opacity = 0;
+                    setTimeout(() => {
+                        womensContainer.classList.add('hidden');
+                        mensContainer.classList.remove('hidden');
+                        setTimeout(() => {
+                            mensContainer.style.opacity = 1;
+                            createChart(mensChartData, "#mens-chart", "#2ecc71", "#e74c3c",
+                                document.getElementById('grouping-toggle-mens').checked ? 'country' : 'year');
+                        }, 50);
+                    }, 500);
+                } else {
+                    mensContainer.style.opacity = 0;
+                    setTimeout(() => {
+                        mensContainer.classList.add('hidden');
+                        womensContainer.classList.remove('hidden');
+                        setTimeout(() => {
+                            womensContainer.style.opacity = 1;
+                            createChart(womensChartData, "#womens-chart", "#9b59b6", "#e67e22",
+                                document.getElementById('grouping-toggle-womens').checked ? 'country' : 'year');
+                        }, 50);
+                    }, 500);
+                }
+            });
+
+            // Add grouping toggle event listeners
             document.getElementById('grouping-toggle-mens').addEventListener('change', function (e) {
                 createChart(mensChartData, "#mens-chart", "#2ecc71", "#e74c3c", e.target.checked ? 'country' : 'year');
             });
