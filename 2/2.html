@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIFA World Cup Hosts and Performance</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #details {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #visualization-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .content-wrapper {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 20px;
+    }
+
+    #map-container {
+      flex: 1;
+      min-width: 0;
+    }
+
+    #chart-container {
+      flex: 0 0 450px;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .legend {
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+    }
+
+    .map-legend {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="visualization-container">
+    <h1>FIFA World Cup Hosts and Performance Probability</h1>
+    <div id="details">Click on a country to see performance details</div>
+    <div class="content-wrapper">
+      <div id="map-container"></div>
+      <div id="chart-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const width = 960;
+    const height = 600;
+
+    const svg = d3.select("#map-container")
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    const projection = d3.geoNaturalEarth1()
+      .scale(160)
+      .translate([width / 2, height / 2]);
+
+    const path = d3.geoPath().projection(projection);
+    const colorScale = d3.scaleSequential(d3.interpolateOranges);
+
+    // Add choropleth legend
+    const mapLegend = svg.append("g")
+      .attr("class", "legend map-legend")
+      .attr("transform", "translate(20,20)");
+
+    Promise.all([
+      d3.json("clean_geo.json"),
+      d3.csv("clean_data.csv"),
+      d3.csv("data.csv"),
+      d3.csv("data2.csv", d => ({
+        Team: d.Team,
+        Appearances: +d.Appearances.trim()
+      }))
+    ]).then(([geoData, hostData, performanceData, data2]) => {
+      // Process hosting data
+      const hostDetails = {};
+      const hostYears = {};
+      hostData.forEach(d => {
+        if (!hostDetails[d.team_name]) {
+          hostDetails[d.team_name] = [];
+          hostYears[d.team_name] = [];
+        }
+        hostDetails[d.team_name].push(`${d.tournament_name} (${d.performance})`);
+        hostYears[d.team_name].push(d.tournament_id.split('-')[1]);
+      });
+
+      const maxValue = d3.max(Object.values(hostDetails).map(d => d.length));
+      colorScale.domain([0, maxValue]);
+
+      // Draw choropleth legend
+      const legendValues = Array.from({ length: maxValue + 1 }, (_, i) => i);
+
+      mapLegend.selectAll("rect")
+        .data(legendValues)
+        .enter()
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * 20)
+        .attr("width", 20)
+        .attr("height", 20)
+        .style("fill", d => colorScale(d));
+
+      mapLegend.selectAll("text")
+        .data(legendValues)
+        .enter()
+        .append("text")
+        .attr("x", 30)
+        .attr("y", (d, i) => i * 20 + 15)
+        .text(d => `${d} time${d !== 1 ? 's' : ''}`);
+
+      // Draw choropleth map
+      svg.selectAll(".country")
+        .data(geoData.features)
+        .enter()
+        .append("path")
+        .attr("class", "country")
+        .attr("d", path)
+        .style("stroke", "#fff")
+        .style("stroke-width", 0.5)
+        .style("fill", d => {
+          const country = d.properties.name;
+          return hostDetails[country] ? colorScale(hostDetails[country].length) : "#ccc";
+        })
+        .on("mouseover", function (event, d) {
+          const country = d.properties.name;
+          const hostedTimes = hostDetails[country] ? hostDetails[country].length : 0;
+
+          d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .html(`<strong>${country}</strong><br>Hosted: ${hostedTimes} times`)
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY + 10}px`)
+            .style("opacity", 1);
+        })
+        .on("mouseout", function () {
+          d3.select(".tooltip").remove();
+        })
+        .on("click", function (event, d) {
+          const country = d.properties.name;
+          const details = hostDetails[country] ?
+            `<strong>${country}'s Probability of Reaching Top 4</strong><br>Hosting years: ${hostYears[country].join(', ')}<br>Click on country to see performance details` :
+            `<strong>${country}</strong><br>No World Cups hosted<br>Click on country to see performance details`;
+          d3.select("#details").html(details);
+          updateProbabilityChart(country);
+        });
+        //   const details = hostDetails[country] ?
+        //     `<strong>${country}'s Probability of Reaching Top 4</strong><br>Hosting years: ${hostYears[country].join(', ')}` :
+        //     `<strong>${country}</strong><br>No World Cups hosted`;
+        //   d3.select("#details").html(details);
+        //   updateProbabilityChart(country);
+        // });
+
+      function updateProbabilityChart(country) {
+        // Get country data from data2.csv
+        const countryInfo = data2.find(d => d.Team === country);
+        if (!countryInfo) {
+          console.log(`No appearance data found for ${country}`);
+          return;
+        }
+
+        const totalAppearances = countryInfo.Appearances;
+        const countryData = performanceData.filter(d => d.team_name === country);
+
+        // Calculate normal probability
+        const top4Count = countryData.filter(d => parseInt(d.position) <= 4).length;
+        const normalProb = (top4Count / totalAppearances) * 100;
+
+        // Calculate hosting probability
+        const hostYearsForCountry = hostYears[country] || [];
+        const hostTop4Count = countryData.filter(d => {
+          const year = d.tournament_id.split('-')[1];
+          return hostYearsForCountry.includes(year) && parseInt(d.position) <= 4;
+        }).length;
+        const hostProb = hostYearsForCountry.length > 0 ?
+          (hostTop4Count / hostYearsForCountry.length) * 100 : 0;
+
+        // Create probability chart
+        const chartWidth = 300;
+        const chartHeight = 200;
+
+        d3.select("#chart-container svg").remove();
+
+        const chartSvg = d3.select("#chart-container")
+          .append("svg")
+          .attr("width", chartWidth + 150)
+          .attr("height", chartHeight + 100)
+          .append("g")
+          .attr("transform", "translate(50,20)");
+
+        const probabilityData = [
+          { type: "Overall", value: normalProb },
+          { type: "When Hosting", value: hostProb }
+        ];
+
+        const x = d3.scaleBand()
+          .domain(probabilityData.map(d => d.type))
+          .range([0, chartWidth])
+          .padding(0.2);
+
+        const y = d3.scaleLinear()
+          .domain([0, 100])
+          .range([chartHeight, 0]);
+
+        // Draw bars
+        chartSvg.selectAll(".bar")
+          .data(probabilityData)
+          .enter()
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", d => x(d.type))
+          .attr("y", d => y(d.value))
+          .attr("width", x.bandwidth())
+          .attr("height", d => chartHeight - y(d.value))
+          .attr("fill", d => d.type === "When Hosting" ? "green" : "yellow")
+          .attr("stroke", "black");
+
+        // Add values on top of bars
+        chartSvg.selectAll(".value")
+          .data(probabilityData)
+          .enter()
+          .append("text")
+          .attr("class", "value")
+          .attr("x", d => x(d.type) + x.bandwidth() / 2)
+          .attr("y", d => y(d.value) - 5)
+          .attr("text-anchor", "middle")
+          .text(d => `${d.value.toFixed(1)}%`);
+
+        // Add axes
+        chartSvg.append("g")
+          .attr("transform", `translate(0,${chartHeight})`)
+          .call(d3.axisBottom(x));
+
+        chartSvg.append("g")
+          .call(d3.axisLeft(y)
+            .tickFormat(d => d + "%"));
+
+        // Add legend
+        const legend = chartSvg.append("g")
+          .attr("class", "legend")
+          .attr("transform", `translate(${chartWidth + 10}, 0)`);
+
+        legend.append("rect")
+          .attr("width", 15)
+          .attr("height", 15)
+          .attr("fill", "yellow");
+
+        legend.append("text")
+          .attr("x", 25)
+          .attr("y", 12)
+          .text("Overall");
+
+        legend.append("rect")
+          .attr("width", 15)
+          .attr("height", 15)
+          .attr("y", 25)
+          .attr("fill", "green");
+
+        legend.append("text")
+          .attr("x", 25)
+          .attr("y", 37)
+          .text("When Hosting");
+      }
+
+      // Initialize with Sweden's data
+      const swedenFeature = geoData.features.find(f => f.properties.name === "Sweden");
+      if (swedenFeature) {
+        const details = hostDetails["Sweden"] ?
+          `<strong>Sweden's Probability of Reaching Top 4</strong><br>Hosting years: ${hostYears["Sweden"].join(', ')}` :
+          `<strong>Sweden</strong><br>No World Cups hosted`;
+        d3.select("#details").html(details);
+        updateProbabilityChart("Sweden");
+      }
+    }).catch(error => {
+      console.error("Error loading data: ", error);
+    });
+  </script>
+</body>
+
+</html>
