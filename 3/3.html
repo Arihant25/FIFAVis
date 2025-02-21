@@ -94,7 +94,7 @@
 <body>
     <script>
         d3.csv("bookings.csv").then(function(data) {
-            const margin = {top: 40, right: 20, bottom: 70, left: 90};
+            const margin = {top: 60, right: 20, bottom: 70, left: 90};
             const width = 800 - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
             
@@ -236,10 +236,14 @@
                     .enter()
                     .append("rect")
                     .attr("x", d => tooltipX(d.combo))
-                    .attr("y", d => tooltipY(d.count))
+                    .attr("y", tooltipHeight - tooltipMargin.bottom)
                     .attr("width", tooltipX.bandwidth())
-                    .attr("height", d => tooltipHeight - tooltipMargin.bottom - tooltipY(d.count))
-                    .attr("fill", color);
+                    .attr("height", 0)
+                    .attr("fill", color)
+                    .transition()
+                    .duration(800)
+                    .attr("y", d => tooltipY(d.count))
+                    .attr("height", d => tooltipHeight - tooltipMargin.bottom - tooltipY(d.count));
 
                 // Add Y-axis
                 tooltipSvg.append("g")
@@ -278,22 +282,6 @@
                     .attr("y", d => tooltipY(d.count) - 5)
                     .attr("text-anchor", "middle")
                     .text(d => d.count);
-
-                // Add card visualizations below X-axis
-                // let cardsContainer = tooltip.append("div")
-                //     .style("display", "flex")
-                //     .style("justify-content", "space-around")
-                //     .style("margin-top", "10px");
-
-                // data.forEach(d => {
-                //     let cardGroup = cardsContainer.append("div")
-                //         .style("text-align", "center")
-                //         .style("width", `${tooltipX.bandwidth()}px`);
-                    
-                //     cardGroup.node().appendChild(
-                //         createCardsElement(d.yellowCards, d.redCards)
-                //     );
-                // });
             }
 
             svg.selectAll(".point-group")
@@ -309,22 +297,32 @@
                         group.append("rect")
                             .attr("class", color)
                             .attr("x", colorScale(color))
-                            .attr("y", yScale(pointData[color]))
+                            .attr("y", height)
                             .attr("width", colorScale.bandwidth())
-                            .attr("height", height - yScale(pointData[color]))
+                            .attr("height", 0)
                             .attr("fill", color)
-                            .on("mouseover", function(event) {
-                                tooltip.transition()
-                                    .duration(200)
-                                    .style("opacity", 1);
-                                showDistributionChart(d, color, this.getAttribute("fill"));
-                                tooltip.style("left", (event.pageX + 5) + "px")
-                                    .style("top", (event.pageY - 28) + "px");
-                            })
-                            .on("mouseout", function() {
-                                tooltip.transition()
-                                    .duration(500)
-                                    .style("opacity", 0);
+                            .transition()
+                            .delay(1000) // Delay to start after axes appear
+                            .duration(800)
+                            .attr("x", colorScale(color))
+                            .attr("y", yScale(pointData[color]))
+                            .attr("height", height - yScale(pointData[color]))
+                            .ease(d3.easeBounceOut)
+                            .on("end", function() {
+                                d3.select(this)
+                                    .on("mouseover", function(event) {
+                                        tooltip.transition()
+                                            .duration(200)
+                                            .style("opacity", 1);
+                                        showDistributionChart(d, color, this.getAttribute("fill"));
+                                        tooltip.style("left", (event.pageX + 5) + "px")
+                                            .style("top", (event.pageY - 28) + "px");
+                                    })
+                                    .on("mouseout", function() {
+                                        tooltip.transition()
+                                            .duration(500)
+                                            .style("opacity", 0);
+                                    });
                             });
                     });
                 });
@@ -334,13 +332,21 @@
                 .attr("class", "axis")
                 .call(d3.axisBottom(xScale).tickFormat(d => d))
                 .selectAll("text")
-                .style("font-size", "16px");
+                .style("font-size", "16px")
+                .style("opacity", 0)
+                .transition()
+                .duration(1000)
+                .style("opacity", 1);
 
             svg.append("g")
                 .attr("class", "axis")
                 .call(d3.axisLeft(yScale))
                 .selectAll("text")
-                .style("font-size", "16px");
+                .style("font-size", "16px")
+                .style("opacity", 0)
+                .transition()
+                .duration(1000)
+                .style("opacity", 1);
 
             svg.append("text")
                 .attr("class", "axis-label")
@@ -356,6 +362,14 @@
                 .attr("x", -height / 2)
                 .attr("y", -margin.left + 30)
                 .text("Number of matches");
+
+            // Add title
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", -margin.top / 2)
+                .attr("text-anchor", "middle")
+                .attr("class", "axis-label")
+                .text("Match Points Distribution");
 
             // Add legend
             let legend = svg.append("g")
