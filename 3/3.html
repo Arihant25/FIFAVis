@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Points Bar Chart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .bar rect {
+            height: 20px;
+        }
+        .green {
+            fill: green;
+        }
+        .grey {
+            fill: grey;
+        }
+        .red {
+            fill: red;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .tooltip-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .tooltip-chart text {
+            font-size: 12px;
+        }
+        .axis text {
+            font-size: 16px;
+        }
+        .axis-label {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .hovered-axis-label {
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .card {
+            display: inline-block;
+            width: 15px;
+            height: 20px;
+            margin-top: 4px;
+            margin-left: 4px;
+            border-radius: 2px;
+            border: 1px solid #000;
+        }
+        .yellow-card {
+            background-color: #FFD700;
+        }
+        .red-card {
+            background-color: #FF0000;
+        }
+        .cards-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-top: 5px;
+        }
+        .legend {
+            font-size: 14px;
+        }
+        .legend rect {
+            width: 18px;
+            height: 18px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        d3.csv("bookings.csv").then(function(data) {
+            const margin = {top: 40, right: 20, bottom: 70, left: 90};
+            const width = 800 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            
+            let points = {};
+            let cardDistributions = {};
+
+            data.forEach(function(d) {
+                let homePoints = +d.home_team_yellow_cards + 3 * +d.home_team_red_cards;
+                let awayPoints = +d.away_team_yellow_cards + 3 * +d.away_team_red_cards;
+
+                if (!points[homePoints]) points[homePoints] = { green: 0, grey: 0, red: 0 };
+                if (!points[awayPoints]) points[awayPoints] = { green: 0, grey: 0, red: 0 };
+
+                if (!cardDistributions[homePoints]) cardDistributions[homePoints] = {};
+                if (!cardDistributions[awayPoints]) cardDistributions[awayPoints] = {};
+
+                let homeCombo = `${d.home_team_yellow_cards},${d.home_team_red_cards}`;
+                let awayCombo = `${d.away_team_yellow_cards},${d.away_team_red_cards}`;
+
+                if (!cardDistributions[homePoints][homeCombo]) cardDistributions[homePoints][homeCombo] = { green: 0, grey: 0, red: 0 };
+                if (!cardDistributions[awayPoints][awayCombo]) cardDistributions[awayPoints][awayCombo] = { green: 0, grey: 0, red: 0 };
+
+                if (d.home_team_score > d.away_team_score) {
+                    points[homePoints].green += 1;
+                    points[awayPoints].red += 1;
+                    cardDistributions[homePoints][homeCombo].green += 1;
+                    cardDistributions[awayPoints][awayCombo].red += 1;
+                } else if (d.home_team_score < d.away_team_score) {
+                    points[homePoints].red += 1;
+                    points[awayPoints].green += 1;
+                    cardDistributions[homePoints][homeCombo].red += 1;
+                    cardDistributions[awayPoints][awayCombo].green += 1;
+                } else {
+                    points[homePoints].grey += 1;
+                    points[awayPoints].grey += 1;
+                    cardDistributions[homePoints][homeCombo].grey += 1;
+                    cardDistributions[awayPoints][awayCombo].grey += 1;
+                }
+            });
+
+            let maxPoints = Math.max(...Object.keys(points).map(Number));
+
+            let svg = d3.select("body").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            let xScale = d3.scaleBand()
+                .domain(d3.range(maxPoints + 1))
+                .range([0, width])
+                .padding(0.1);
+
+            let yScale = d3.scaleLinear()
+                .domain([0, d3.max(Object.values(points), d => Math.max(d.green, d.grey, d.red))])
+                .range([height, 0]);
+
+            let colorScale = d3.scaleBand()
+                .domain(["green", "grey", "red"])
+                .range([0, xScale.bandwidth()])
+                .padding(0.05);
+
+            let tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            const colorMap = {
+                green: "Wins",
+                grey: "Draws",
+                red: "Losses"
+            };
+
+            function createCardsElement(yellowCards, redCards) {
+                let container = document.createElement('div');
+                container.className = 'cards-container';
+                
+                // Add yellow cards
+                let yellowGroup = document.createElement('div');
+                yellowGroup.className = 'card-group';
+                for (let i = 0; i < yellowCards; i++) {
+                    let card = document.createElement('div');
+                    card.className = 'card yellow-card';
+                    yellowGroup.appendChild(card);
+                }
+                container.appendChild(yellowGroup);
+                
+                // Add red cards
+                let redGroup = document.createElement('div');
+                redGroup.className = 'card-group';
+                for (let i = 0; i < redCards; i++) {
+                    let card = document.createElement('div');
+                    card.className = 'card red-card';
+                    redGroup.appendChild(card);
+                }
+                container.appendChild(redGroup);
+                
+                return container;
+            }
+
+            function showDistributionChart(pointValue, resultType, color) {
+                let distributions = cardDistributions[pointValue];
+                if (!distributions) return;
+
+                let data = Object.entries(distributions)
+                    .map(([combo, counts]) => ({
+                        combo: combo,
+                        yellowCards: parseInt(combo.split(',')[0]),
+                        redCards: parseInt(combo.split(',')[1]),
+                        count: counts[resultType] || 0
+                    }))
+                    .filter(d => d.count > 0)
+                    .sort((a, b) => b.count - a.count);
+
+                const tooltipWidth = 300;
+                const tooltipHeight = 200;
+                const tooltipMargin = { top: 20, right: 10, bottom: 50, left: 40 };
+
+                tooltip.html("")
+                    .append("div")
+                    .attr("class", "tooltip-title")
+                    .text(`${colorMap[resultType]} with ${pointValue} booking points`);
+
+                let tooltipSvg = tooltip.append("svg")
+                    .attr("width", tooltipWidth)
+                    .attr("height", tooltipHeight);
+
+                let tooltipX = d3.scaleBand()
+                    .domain(data.map(d => d.combo))
+                    .range([tooltipMargin.left, tooltipWidth - tooltipMargin.right])
+                    .padding(0.1);
+
+                let tooltipY = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.count)])
+                    .range([tooltipHeight - tooltipMargin.bottom, tooltipMargin.top]);
+
+                // Add bars
+                tooltipSvg.selectAll("rect")
+                    .data(data)
+                    .enter()
+                    .append("rect")
+                    .attr("x", d => tooltipX(d.combo))
+                    .attr("y", d => tooltipY(d.count))
+                    .attr("width", tooltipX.bandwidth())
+                    .attr("height", d => tooltipHeight - tooltipMargin.bottom - tooltipY(d.count))
+                    .attr("fill", color);
+
+                // Add Y-axis
+                tooltipSvg.append("g")
+                    .attr("transform", `translate(${tooltipMargin.left},0)`)
+                    .call(d3.axisLeft(tooltipY));
+
+                // Add X-axis
+                tooltipSvg.append("g")
+                    .attr("transform", `translate(0,${tooltipHeight - tooltipMargin.bottom})`)
+                    .call(d3.axisBottom(tooltipX));
+
+                // Add X-axis label
+                tooltipSvg.append("text")
+                    .attr("class", "hovered-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("x", tooltipWidth / 2)
+                    .attr("y", tooltipHeight - 10)
+                    .text("Yellow, Red Cards");
+
+                // Add Y-axis label
+                tooltipSvg.append("text")
+                    .attr("class", "hovered-axis-label")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -tooltipHeight / 2 + 14)
+                    .attr("y", 10)
+                    .text("Number of matches");
+
+                // Add values on bars
+                tooltipSvg.selectAll(".bar-text")
+                    .data(data)
+                    .enter()
+                    .append("text")
+                    .attr("class", "bar-text")
+                    .attr("x", d => tooltipX(d.combo) + tooltipX.bandwidth() / 2)
+                    .attr("y", d => tooltipY(d.count) - 5)
+                    .attr("text-anchor", "middle")
+                    .text(d => d.count);
+
+                // Add card visualizations below X-axis
+                // let cardsContainer = tooltip.append("div")
+                //     .style("display", "flex")
+                //     .style("justify-content", "space-around")
+                //     .style("margin-top", "10px");
+
+                // data.forEach(d => {
+                //     let cardGroup = cardsContainer.append("div")
+                //         .style("text-align", "center")
+                //         .style("width", `${tooltipX.bandwidth()}px`);
+                    
+                //     cardGroup.node().appendChild(
+                //         createCardsElement(d.yellowCards, d.redCards)
+                //     );
+                // });
+            }
+
+            svg.selectAll(".point-group")
+                .data(d3.range(maxPoints + 1))
+                .enter().append("g")
+                .attr("class", "point-group")
+                .attr("transform", d => `translate(${xScale(d)}, 0)`)
+                .each(function(d) {
+                    let group = d3.select(this);
+                    let pointData = points[d] || { green: 0, grey: 0, red: 0 };
+
+                    ["green", "grey", "red"].forEach(color => {
+                        group.append("rect")
+                            .attr("class", color)
+                            .attr("x", colorScale(color))
+                            .attr("y", yScale(pointData[color]))
+                            .attr("width", colorScale.bandwidth())
+                            .attr("height", height - yScale(pointData[color]))
+                            .attr("fill", color)
+                            .on("mouseover", function(event) {
+                                tooltip.transition()
+                                    .duration(200)
+                                    .style("opacity", 1);
+                                showDistributionChart(d, color, this.getAttribute("fill"));
+                                tooltip.style("left", (event.pageX + 5) + "px")
+                                    .style("top", (event.pageY - 28) + "px");
+                            })
+                            .on("mouseout", function() {
+                                tooltip.transition()
+                                    .duration(500)
+                                    .style("opacity", 0);
+                            });
+                    });
+                });
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .attr("class", "axis")
+                .call(d3.axisBottom(xScale).tickFormat(d => d))
+                .selectAll("text")
+                .style("font-size", "16px");
+
+            svg.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale))
+                .selectAll("text")
+                .style("font-size", "16px");
+
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "middle")
+                .attr("x", width / 2)
+                .attr("y", height + margin.bottom - 5)
+                .text("Sum of booking points (Yellow = 1, Red = 3)");
+
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "middle")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -margin.left + 30)
+                .text("Number of matches");
+
+            // Add legend
+            let legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 100}, 0)`);
+
+            const legendData = [
+                { color: "green", text: "Wins" },
+                { color: "grey", text: "Draws" },
+                { color: "red", text: "Losses" }
+            ];
+
+            legend.selectAll("g")
+                .data(legendData)
+                .enter().append("g")
+                .attr("transform", (d, i) => `translate(0, ${i * 20})`)
+                .each(function(d) {
+                    let g = d3.select(this);
+                    g.append("rect")
+                        .attr("width", 18)
+                        .attr("height", 18)
+                        .attr("fill", d.color);
+                    g.append("text")
+                        .attr("x", 24)
+                        .attr("y", 9)
+                        .attr("dy", "0.35em")
+                        .text(d.text);
+                });
+        });
+    </script>
+</body>
+</html>
