@@ -8,7 +8,7 @@ This is a course project for the Data Visualization course at the IIIT Hyderabad
 2. Open index.html in a browser
 3. The visualizations will be displayed
 
-Alternatively, [click here](arihant25.github.io/FIFAVis) to view the visualizations right now!
+Alternatively, [click here](https://fifa-vis.vercel.app) to view the visualizations right now!
 
 ## Team Members
 
